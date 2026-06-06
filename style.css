@@ -356,3 +356,85 @@ select.text-input {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
+
+/* ============================================
+   SPLASH SCREEN
+   ============================================ */
+
+#covenant-splash {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#covenant-splash.hidden {
+  display: none;
+}
+
+#covenant-splash-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.covenant-splash-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 1;
+}
+
+#covenant-splash-patch {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+#covenant-splash-patch.visible {
+  opacity: 1;
+}
+
+.covenant-splash-name {
+  font-family: 'Lato', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.covenant-splash-version {
+  font-family: 'Lato', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.covenant-splash-version.visible {
+  opacity: 1;
+}
+
+#covenant-flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9998;
+  transition: opacity 0.3s ease-out;
+}
