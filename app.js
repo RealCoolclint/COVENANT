@@ -849,12 +849,12 @@ window.addEventListener('load', () => {
 
   setTimeout(() => { if (splash) splash.style.opacity = '1'; }, 100);
   setTimeout(() => { if (patch) patch.classList.add('visible'); }, 500);
-  setTimeout(() => { if (versionEl) versionEl.classList.add('visible'); }, 1400);
-  setTimeout(() => { if (flash) flash.style.opacity = '1'; }, 3200);
+  setTimeout(() => { if (versionEl) versionEl.classList.add('visible'); }, 1600);
+  setTimeout(() => { if (flash) flash.style.opacity = '1'; }, 4000);
   setTimeout(() => {
     if (splash) splash.classList.add('hidden');
     if (flash) { flash.style.transition = 'opacity 0.4s ease-out'; flash.style.opacity = '0'; }
     document.getElementById('screen-profile').classList.add('active');
     WebProfileSelector.init();
-  }, 3500);
+  }, 4500);
 });
