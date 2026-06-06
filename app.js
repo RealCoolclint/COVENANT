@@ -823,7 +823,7 @@ const WebProfileSelector = (() => {
 
   return { init, onSessionReady: null };
 })();
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
   document.getElementById('screen-profile').classList.add('active');
   WebProfileSelector.init();
 });
