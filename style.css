@@ -70,6 +70,10 @@ body {
   display: flex;
 }
 
+#screen-profile {
+  display: flex;
+}
+
 /* ============================================
    PROFILE SELECTOR
    ============================================ */
