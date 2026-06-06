@@ -70,7 +70,7 @@ body {
   display: flex;
 }
 
-#screen-profile {
+#screen-profile:not(.hidden) {
   display: flex;
 }
 

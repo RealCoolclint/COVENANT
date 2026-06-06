@@ -790,7 +790,10 @@ const WebProfileSelector = (() => {
     window.covenantSession = session;
     wizardState.journalistePrenom = session.profileName || '';
     const profileScreen = document.getElementById('screen-profile');
-    if (profileScreen) profileScreen.classList.remove('active');
+    if (profileScreen) {
+      profileScreen.classList.remove('active');
+      profileScreen.classList.add('hidden');
+    }
     showScreen('screen-statut');
     renderScreenStatut();
 
