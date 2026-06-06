@@ -70,10 +70,6 @@ body {
   display: flex;
 }
 
-#screen-profile:not(.hidden) {
-  display: flex;
-}
-
 /* ============================================
    PROFILE SELECTOR
    ============================================ */
