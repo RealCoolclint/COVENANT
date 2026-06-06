@@ -251,6 +251,8 @@ const WebProfileSelector = (() => {
   function _notifyReady(session) {
     window.covenantSession = session;
     wizardState.journalistePrenom = session.profileName || '';
+    const profileScreen = document.getElementById('screen-profile');
+    if (profileScreen) profileScreen.classList.remove('active');
     showScreen('screen-statut');
     renderScreenStatut();
 
@@ -322,9 +324,14 @@ const Wizard = (() => {
   }
 
   function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; });
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.display = '';
+    });
     const el = document.getElementById(id);
-    if (el) el.style.display = 'block';
+    if (el) {
+      el.classList.add('active');
+    }
   }
 
   function makeBackBtn(targetScreenId) {

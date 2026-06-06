@@ -2,10 +2,8 @@ body {
   text-transform: uppercase;
 }
 
-.screen {
-  display: none;
-}
-
 #screen-profile {
-  display: block;
+  display: flex !important;
+  flex-direction: column;
+  opacity: 1;
 }
