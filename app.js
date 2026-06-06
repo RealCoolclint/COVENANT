@@ -280,6 +280,7 @@ const WebProfileSelector = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('screen-profile').classList.add('active');
   WebProfileSelector.init();
 });
 
