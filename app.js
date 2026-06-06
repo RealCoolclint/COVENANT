@@ -250,11 +250,9 @@ const WebProfileSelector = (() => {
 
   function _notifyReady(session) {
     window.covenantSession = session;
-
-    const profileScreen = document.getElementById('screen-profile');
-    const statutScreen = document.getElementById('screen-statut');
-    if (profileScreen) profileScreen.style.display = 'none';
-    if (statutScreen) statutScreen.style.display = 'block';
+    wizardState.journalistePrenom = session.profileName || '';
+    showScreen('screen-statut');
+    renderScreenStatut();
 
     if (typeof WebProfileSelector.onSessionReady === 'function') {
       WebProfileSelector.onSessionReady(session);
@@ -282,3 +280,544 @@ const WebProfileSelector = (() => {
 document.addEventListener('DOMContentLoaded', () => {
   WebProfileSelector.init();
 });
+
+const Wizard = (() => {
+  const LEGAL_TEXT_PLACEHOLDER = '[ TEXTE JURIDIQUE — À INTÉGRER ]';
+  const FORMAT_OPTIONS = [
+    'Micro Trottoir',
+    'Interview',
+    'Reportage',
+    'Interro',
+    'School Story',
+    'C\'est Quoi ?',
+    'Audrey T\'explique'
+  ];
+
+  let _signaturePad = null;
+
+  const wizardState = {
+    statut: null,
+    prenom: '',
+    nom: '',
+    contact: '',
+    contactType: 'email',
+    repPrenom: '',
+    repNom: '',
+    repQualite: '',
+    repContact: '',
+    repContactType: 'email',
+    sujet: '',
+    format: '',
+    date: '',
+    journalistePrenom: '',
+    journalisteNom: ''
+  };
+
+  function formatSystemDate() {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return day + '/' + month + '/' + year;
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; });
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'block';
+  }
+
+  function makeBackBtn(targetScreenId) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary';
+    btn.type = 'button';
+    btn.textContent = 'RETOUR';
+    btn.addEventListener('click', () => showScreen(targetScreenId));
+    return btn;
+  }
+
+  function clearScreen(id) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  }
+
+  function fullName(prenom, nom) {
+    return (prenom + ' ' + nom).trim();
+  }
+
+  function resetWizardState(keepStatut) {
+    const statut = keepStatut ? wizardState.statut : null;
+    wizardState.statut = statut;
+    wizardState.prenom = '';
+    wizardState.nom = '';
+    wizardState.contact = '';
+    wizardState.contactType = 'email';
+    wizardState.repPrenom = '';
+    wizardState.repNom = '';
+    wizardState.repQualite = '';
+    wizardState.repContact = '';
+    wizardState.repContactType = 'email';
+    wizardState.sujet = '';
+    wizardState.format = '';
+    wizardState.date = formatSystemDate();
+    wizardState.journalisteNom = '';
+    wizardState.journalistePrenom = (window.covenantSession && window.covenantSession.profileName) || '';
+  }
+
+  function createFieldGroup(labelText, inputEl) {
+    const group = document.createElement('div');
+    group.className = 'field-group';
+    const label = document.createElement('label');
+    label.className = 'field-label';
+    label.textContent = labelText;
+    group.appendChild(label);
+    group.appendChild(inputEl);
+    return group;
+  }
+
+  function buildContactSection(typeKey, contactKey) {
+    const section = document.createElement('div');
+    section.className = 'covenant-contact-section gap-md';
+
+    const toggleWrap = document.createElement('div');
+    toggleWrap.className = 'flex gap-sm';
+
+    const emailBtn = document.createElement('button');
+    emailBtn.type = 'button';
+    emailBtn.textContent = 'EMAIL';
+
+    const telBtn = document.createElement('button');
+    telBtn.type = 'button';
+    telBtn.textContent = 'TÉL';
+
+    const inputWrap = document.createElement('div');
+    let inputEl = null;
+
+    function setType(type) {
+      wizardState[typeKey] = type;
+      emailBtn.className = type === 'email' ? 'btn btn-primary' : 'btn btn-secondary';
+      telBtn.className = type === 'tel' ? 'btn btn-primary' : 'btn btn-secondary';
+
+      const input = document.createElement('input');
+      input.className = 'text-input';
+      input.type = type === 'email' ? 'email' : 'tel';
+      input.value = wizardState[contactKey] || '';
+      input.addEventListener('input', () => {
+        wizardState[contactKey] = input.value.trim();
+      });
+
+      inputWrap.innerHTML = '';
+      inputWrap.appendChild(input);
+      inputEl = input;
+    }
+
+    emailBtn.addEventListener('click', () => setType('email'));
+    telBtn.addEventListener('click', () => setType('tel'));
+    setType(wizardState[typeKey] || 'email');
+
+    toggleWrap.appendChild(emailBtn);
+    toggleWrap.appendChild(telBtn);
+    section.appendChild(toggleWrap);
+    section.appendChild(inputWrap);
+
+    return section;
+  }
+
+  function renderScreenStatut() {
+    clearScreen('screen-statut');
+    const screen = document.getElementById('screen-statut');
+    if (!screen) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen flex-center gap-lg';
+
+    const title = document.createElement('h2');
+    title.textContent = 'STATUT DE L\'INTERVIEWÉ';
+
+    const actions = document.createElement('div');
+    actions.className = 'covenant-statut-actions flex gap-md';
+
+    const majeurBtn = document.createElement('button');
+    majeurBtn.type = 'button';
+    majeurBtn.className = 'btn btn-primary btn-lg';
+    majeurBtn.textContent = 'MAJEUR';
+    majeurBtn.addEventListener('click', () => {
+      wizardState.statut = 'majeur';
+      renderScreenInterviewe();
+      showScreen('screen-interviewe');
+    });
+
+    const mineurBtn = document.createElement('button');
+    mineurBtn.type = 'button';
+    mineurBtn.className = 'btn btn-primary btn-lg';
+    mineurBtn.textContent = 'MINEUR';
+    mineurBtn.addEventListener('click', () => {
+      wizardState.statut = 'mineur';
+      renderScreenInterviewe();
+      showScreen('screen-interviewe');
+    });
+
+    actions.appendChild(majeurBtn);
+    actions.appendChild(mineurBtn);
+    wrap.appendChild(title);
+    wrap.appendChild(actions);
+    screen.appendChild(wrap);
+  }
+
+  function renderScreenInterviewe() {
+    clearScreen('screen-interviewe');
+    const screen = document.getElementById('screen-interviewe');
+    if (!screen) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen gap-lg';
+
+    const header = document.createElement('div');
+    header.className = 'flex-between gap-md';
+    header.appendChild(makeBackBtn('screen-statut'));
+
+    const title = document.createElement('h2');
+    title.textContent = 'IDENTITÉ DE L\'INTERVIEWÉ';
+    header.appendChild(title);
+    wrap.appendChild(header);
+
+    const prenomInput = document.createElement('input');
+    prenomInput.className = 'text-input';
+    prenomInput.type = 'text';
+    prenomInput.value = wizardState.prenom;
+    prenomInput.addEventListener('input', () => { wizardState.prenom = prenomInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('PRÉNOM', prenomInput));
+
+    const nomInput = document.createElement('input');
+    nomInput.className = 'text-input';
+    nomInput.type = 'text';
+    nomInput.value = wizardState.nom;
+    nomInput.addEventListener('input', () => { wizardState.nom = nomInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('NOM', nomInput));
+
+    wrap.appendChild(buildContactSection('contactType', 'contact'));
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'btn btn-primary';
+    nextBtn.textContent = 'SUIVANT';
+    nextBtn.addEventListener('click', () => {
+      if (!wizardState.prenom || !wizardState.nom || !wizardState.contact) return;
+      if (wizardState.statut === 'mineur') {
+        renderScreenRepLegal();
+        showScreen('screen-replegal');
+        return;
+      }
+      renderScreenProjet();
+      showScreen('screen-projet');
+    });
+    wrap.appendChild(nextBtn);
+    screen.appendChild(wrap);
+  }
+
+  function renderScreenRepLegal() {
+    clearScreen('screen-replegal');
+    const screen = document.getElementById('screen-replegal');
+    if (!screen) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen gap-lg';
+
+    const header = document.createElement('div');
+    header.className = 'flex-between gap-md';
+    header.appendChild(makeBackBtn('screen-interviewe'));
+
+    const title = document.createElement('h2');
+    title.textContent = 'REPRÉSENTANT LÉGAL';
+    header.appendChild(title);
+    wrap.appendChild(header);
+
+    const qualiteInput = document.createElement('input');
+    qualiteInput.className = 'text-input';
+    qualiteInput.type = 'text';
+    qualiteInput.value = wizardState.repQualite;
+    qualiteInput.addEventListener('input', () => { wizardState.repQualite = qualiteInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('QUALITÉ', qualiteInput));
+
+    const repPrenomInput = document.createElement('input');
+    repPrenomInput.className = 'text-input';
+    repPrenomInput.type = 'text';
+    repPrenomInput.value = wizardState.repPrenom;
+    repPrenomInput.addEventListener('input', () => { wizardState.repPrenom = repPrenomInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('PRÉNOM', repPrenomInput));
+
+    const repNomInput = document.createElement('input');
+    repNomInput.className = 'text-input';
+    repNomInput.type = 'text';
+    repNomInput.value = wizardState.repNom;
+    repNomInput.addEventListener('input', () => { wizardState.repNom = repNomInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('NOM', repNomInput));
+
+    wrap.appendChild(buildContactSection('repContactType', 'repContact'));
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'btn btn-primary';
+    nextBtn.textContent = 'SUIVANT';
+    nextBtn.addEventListener('click', () => {
+      if (!wizardState.repQualite || !wizardState.repPrenom || !wizardState.repNom || !wizardState.repContact) return;
+      renderScreenProjet();
+      showScreen('screen-projet');
+    });
+    wrap.appendChild(nextBtn);
+    screen.appendChild(wrap);
+  }
+
+  function renderScreenProjet() {
+    clearScreen('screen-projet');
+    const screen = document.getElementById('screen-projet');
+    if (!screen) return;
+
+    if (!wizardState.date) {
+      wizardState.date = formatSystemDate();
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen gap-lg';
+
+    const backTarget = wizardState.statut === 'mineur' ? 'screen-replegal' : 'screen-interviewe';
+
+    const header = document.createElement('div');
+    header.className = 'flex-between gap-md';
+    header.appendChild(makeBackBtn(backTarget));
+
+    const title = document.createElement('h2');
+    title.textContent = 'LE PROJET';
+    header.appendChild(title);
+    wrap.appendChild(header);
+
+    const sujetInput = document.createElement('input');
+    sujetInput.className = 'text-input';
+    sujetInput.type = 'text';
+    sujetInput.value = wizardState.sujet;
+    sujetInput.addEventListener('input', () => { wizardState.sujet = sujetInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('SUJET', sujetInput));
+
+    const formatSelect = document.createElement('select');
+    formatSelect.className = 'text-input';
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = '';
+    formatSelect.appendChild(emptyOption);
+    FORMAT_OPTIONS.forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option;
+      opt.textContent = option;
+      if (wizardState.format === option) opt.selected = true;
+      formatSelect.appendChild(opt);
+    });
+    formatSelect.addEventListener('change', () => { wizardState.format = formatSelect.value; });
+    wrap.appendChild(createFieldGroup('FORMAT', formatSelect));
+
+    const dateInput = document.createElement('input');
+    dateInput.className = 'text-input';
+    dateInput.type = 'text';
+    dateInput.value = wizardState.date;
+    dateInput.readOnly = true;
+    wrap.appendChild(createFieldGroup('DATE', dateInput));
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'btn btn-primary';
+    nextBtn.textContent = 'SUIVANT';
+    nextBtn.addEventListener('click', () => {
+      wizardState.format = formatSelect.value;
+      if (!wizardState.sujet || !wizardState.format) return;
+      renderScreenSign();
+      showScreen('screen-sign');
+    });
+    wrap.appendChild(nextBtn);
+    screen.appendChild(wrap);
+  }
+
+  function initSignaturePad() {
+    const canvas = document.getElementById('covenant-canvas');
+    if (!canvas || typeof SignaturePad === 'undefined') return;
+
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext('2d').scale(ratio, ratio);
+    _signaturePad = new SignaturePad(canvas);
+  }
+
+  function renderScreenSign() {
+    clearScreen('screen-sign');
+    _signaturePad = null;
+    const screen = document.getElementById('screen-sign');
+    if (!screen) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen gap-lg';
+
+    const header = document.createElement('div');
+    header.className = 'flex-between gap-md';
+    header.appendChild(makeBackBtn('screen-projet'));
+
+    const title = document.createElement('h2');
+    title.textContent = 'SIGNATURE';
+    header.appendChild(title);
+    wrap.appendChild(header);
+
+    const summary = document.createElement('div');
+    summary.className = 'covenant-sign-summary gap-sm';
+    const statutLabel = wizardState.statut === 'mineur' ? 'MINEUR' : 'MAJEUR';
+    [
+      'STATUT : ' + statutLabel,
+      'NOM COMPLET : ' + fullName(wizardState.prenom, wizardState.nom),
+      'FORMAT : ' + wizardState.format,
+      'SUJET : ' + wizardState.sujet,
+      'DATE : ' + wizardState.date
+    ].forEach(line => {
+      const p = document.createElement('p');
+      p.className = 'text-primary';
+      p.textContent = line;
+      summary.appendChild(p);
+    });
+    wrap.appendChild(summary);
+
+    const legalToggleBtn = document.createElement('button');
+    legalToggleBtn.type = 'button';
+    legalToggleBtn.className = 'btn btn-ghost';
+    legalToggleBtn.textContent = 'LIRE LE TEXTE INTÉGRAL';
+
+    const legalBlock = document.createElement('div');
+    legalBlock.className = 'covenant-legal-text';
+    legalBlock.hidden = true;
+    const legalText = document.createElement('p');
+    legalText.className = 'text-secondary';
+    legalText.textContent = LEGAL_TEXT_PLACEHOLDER;
+    legalBlock.appendChild(legalText);
+
+    legalToggleBtn.addEventListener('click', () => {
+      legalBlock.hidden = !legalBlock.hidden;
+    });
+
+    wrap.appendChild(legalToggleBtn);
+    wrap.appendChild(legalBlock);
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'covenant-canvas';
+    canvas.width = 600;
+    canvas.height = 200;
+    wrap.appendChild(canvas);
+
+    const signActions = document.createElement('div');
+    signActions.className = 'flex gap-md';
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn btn-secondary';
+    clearBtn.textContent = 'EFFACER';
+    clearBtn.addEventListener('click', () => {
+      if (_signaturePad) _signaturePad.clear();
+    });
+
+    const validateBtn = document.createElement('button');
+    validateBtn.type = 'button';
+    validateBtn.className = 'btn btn-primary';
+    validateBtn.textContent = 'VALIDER LA SIGNATURE';
+    validateBtn.addEventListener('click', () => {
+      if (!_signaturePad || _signaturePad.isEmpty()) return;
+      renderScreenConfirm();
+      showScreen('screen-confirm');
+    });
+
+    signActions.appendChild(clearBtn);
+    signActions.appendChild(validateBtn);
+    wrap.appendChild(signActions);
+    screen.appendChild(wrap);
+
+    requestAnimationFrame(() => initSignaturePad());
+  }
+
+  function renderScreenConfirm() {
+    clearScreen('screen-confirm');
+    const screen = document.getElementById('screen-confirm');
+    if (!screen) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'covenant-wizard-screen flex-center gap-lg';
+
+    const title = document.createElement('h2');
+    title.textContent = 'AUTORISATION ENREGISTRÉE';
+
+    const recap = document.createElement('div');
+    recap.className = 'covenant-confirm-recap gap-sm';
+    const statutLabel = wizardState.statut === 'mineur' ? 'MINEUR' : 'MAJEUR';
+    const journaliste = (window.covenantSession && window.covenantSession.profileName)
+      || fullName(wizardState.journalistePrenom, wizardState.journalisteNom);
+    [
+      'STATUT : ' + statutLabel,
+      'NOM INTERVIEWÉ : ' + fullName(wizardState.prenom, wizardState.nom),
+      'FORMAT : ' + wizardState.format,
+      'SUJET : ' + wizardState.sujet,
+      'DATE : ' + wizardState.date,
+      'JOURNALISTE : ' + journaliste
+    ].forEach(line => {
+      const p = document.createElement('p');
+      p.className = 'text-primary';
+      p.textContent = line;
+      recap.appendChild(p);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'flex gap-md';
+
+    const newSignBtn = document.createElement('button');
+    newSignBtn.type = 'button';
+    newSignBtn.className = 'btn btn-primary';
+    newSignBtn.textContent = 'NOUVELLE SIGNATURE';
+    newSignBtn.addEventListener('click', () => {
+      resetWizardState(true);
+      renderScreenStatut();
+      showScreen('screen-statut');
+    });
+
+    const finishBtn = document.createElement('button');
+    finishBtn.type = 'button';
+    finishBtn.className = 'btn btn-secondary';
+    finishBtn.textContent = 'TERMINER';
+    finishBtn.addEventListener('click', () => {
+      resetWizardState(false);
+      renderScreenStatut();
+      showScreen('screen-statut');
+    });
+
+    actions.appendChild(newSignBtn);
+    actions.appendChild(finishBtn);
+    wrap.appendChild(title);
+    wrap.appendChild(recap);
+    wrap.appendChild(actions);
+    screen.appendChild(wrap);
+  }
+
+  wizardState.date = formatSystemDate();
+
+  return {
+    wizardState,
+    showScreen,
+    makeBackBtn,
+    renderScreenStatut,
+    renderScreenInterviewe,
+    renderScreenRepLegal,
+    renderScreenProjet,
+    renderScreenSign,
+    renderScreenConfirm
+  };
+})();
+
+const wizardState = Wizard.wizardState;
+const showScreen = Wizard.showScreen;
+const makeBackBtn = Wizard.makeBackBtn;
+const renderScreenStatut = Wizard.renderScreenStatut;
+const renderScreenInterviewe = Wizard.renderScreenInterviewe;
+const renderScreenRepLegal = Wizard.renderScreenRepLegal;
+const renderScreenProjet = Wizard.renderScreenProjet;
+const renderScreenSign = Wizard.renderScreenSign;
+const renderScreenConfirm = Wizard.renderScreenConfirm;
