@@ -596,54 +596,22 @@ const WebProfileSelector = (() => {
     }
   }
 
-  function _createAvatarFallback(profile) {
-    const fb = document.createElement('div');
-    fb.className = 'covenant-ps-avatar-fallback text-upper';
-    fb.textContent = profile.initiales || (profile.firstName || '').slice(0, 1).toUpperCase();
-    return fb;
-  }
-
-  function _createAvatarFromProfile(profile) {
-    const wrap = document.createElement('div');
-    wrap.className = 'covenant-ps-avatar-wrap';
-
-    if (profile.avatar) {
-      const img = document.createElement('img');
-      img.className = 'covenant-ps-avatar';
-      img.src = profile.avatar;
-      img.alt = profile.firstName || '';
-      img.addEventListener('error', function () {
-        img.replaceWith(_createAvatarFallback(profile));
-      });
-      wrap.appendChild(img);
-    } else {
-      wrap.appendChild(_createAvatarFallback(profile));
-    }
-
-    return wrap;
-  }
-
   function _createAvatarFromSession(session) {
     const wrap = document.createElement('div');
-    wrap.className = 'covenant-ps-avatar-wrap';
+    wrap.className = 'ps-avatar-wrap';
+    const initiales = session.profileInitiales || (session.profileName || '').slice(0, 1).toUpperCase();
+    const color = session.profileColor && session.profileColor.indexOf('var(') !== 0
+      ? session.profileColor
+      : '#2563eb';
 
     if (session.profileAvatar) {
-      const img = document.createElement('img');
-      img.className = 'covenant-ps-avatar';
-      img.src = session.profileAvatar;
-      img.alt = session.profileName || '';
-      img.addEventListener('error', function () {
-        img.replaceWith(_createAvatarFallback({
-          initiales: session.profileInitiales,
-          firstName: session.profileName
-        }));
-      });
-      wrap.appendChild(img);
+      wrap.innerHTML =
+        '<img class="ps-avatar" src="' + session.profileAvatar + '" alt="' + (session.profileName || '') + '"' +
+        ' onerror="this.style.display=\'none\';this.nextElementSibling.classList.remove(\'ps-hidden\')" />' +
+        '<div class="ps-avatar-fallback ps-hidden" style="background-color:' + color + '">' + initiales + '</div>';
     } else {
-      wrap.appendChild(_createAvatarFallback({
-        initiales: session.profileInitiales,
-        firstName: session.profileName
-      }));
+      wrap.innerHTML =
+        '<div class="ps-avatar-fallback" style="background-color:' + color + '">' + initiales + '</div>';
     }
 
     return wrap;
@@ -679,66 +647,69 @@ const WebProfileSelector = (() => {
     const container = _getContainer();
     if (!container) return;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'covenant-ps-selection flex-center gap-lg';
+    const card = document.createElement('div');
+    card.className = 'ps-card';
 
-    const title = document.createElement('h1');
+    const header = document.createElement('div');
+    header.className = 'ps-header';
+
+    const patch = document.createElement('img');
+    patch.className = 'ps-app-patch';
+    patch.src = 'assets/patch_COVENANT.png';
+    patch.alt = 'COVENANT';
+
+    const appName = document.createElement('div');
+    appName.className = 'ps-app-name';
+    appName.textContent = 'COVENANT';
+
+    const title = document.createElement('div');
+    title.className = 'ps-title';
     title.textContent = 'QUI ES-TU ?';
 
-    const list = document.createElement('div');
-    list.className = 'covenant-ps-list gap-md';
+    header.appendChild(patch);
+    header.appendChild(appName);
+    header.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.id = 'ps-profiles-grid';
+    grid.className = 'ps-profiles-grid';
+
+    const empty = document.createElement('div');
+    empty.id = 'ps-empty-state';
+    empty.className = 'ps-empty-state';
+    empty.hidden = true;
+    empty.innerHTML = '<p>Aucun profil disponible.<br>Vérifiez votre connexion Internet.</p>';
 
     if (_profiles.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'text-tertiary';
-      empty.textContent = 'AUCUN PROFIL DISPONIBLE';
-      list.appendChild(empty);
+      empty.hidden = false;
     } else {
       _profiles.forEach(profile => {
-        const card = document.createElement('div');
-        card.className = 'covenant-ps-card flex gap-md';
-        card.setAttribute('role', 'button');
-        card.tabIndex = 0;
-
-        card.appendChild(_createAvatarFromProfile(profile));
-
-        const info = document.createElement('div');
-        info.className = 'covenant-ps-info';
-
-        const name = document.createElement('div');
-        name.className = 'text-primary text-upper';
-        name.textContent = profile.firstName || '';
-        info.appendChild(name);
-
-        if (profile.role) {
-          const role = document.createElement('div');
-          role.className = 'text-secondary';
-          role.textContent = profile.role;
-          info.appendChild(role);
-        }
-
-        card.appendChild(info);
-
-        function selectProfile() {
+        const profileCard = document.createElement('div');
+        profileCard.className = 'ps-profile-card';
+        const initiales = profile.initiales || (profile.firstName || '').slice(0, 1).toUpperCase();
+        const color = profile.color || '#2563eb';
+        const isAdmin = profile.role === 'admin';
+        profileCard.innerHTML =
+          '<div class="ps-check">&#10003;</div>' +
+          '<div class="ps-avatar-wrap">' +
+            '<img class="ps-avatar" src="' + (profile.avatar || '') + '" alt="' + (profile.firstName || '') + '"' +
+            ' onerror="this.style.display=\'none\';this.nextElementSibling.classList.remove(\'ps-hidden\')" />' +
+            '<div class="ps-avatar-fallback ps-hidden" style="background-color:' + color + '">' + initiales + '</div>' +
+          '</div>' +
+          '<div class="ps-profile-name">' + (profile.firstName || '') + '</div>' +
+          (isAdmin ? '<span class="ps-badge-admin">ADMIN</span>' : '');
+        profileCard.addEventListener('click', () => {
           const session = writeSession(profile);
           _notifyReady(session);
-        }
-
-        card.addEventListener('click', selectProfile);
-        card.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            selectProfile();
-          }
         });
-
-        list.appendChild(card);
+        grid.appendChild(profileCard);
       });
     }
 
-    wrap.appendChild(title);
-    wrap.appendChild(list);
-    container.appendChild(wrap);
+    card.appendChild(header);
+    card.appendChild(grid);
+    card.appendChild(empty);
+    container.appendChild(card);
   }
 
   function renderConfirmation(session) {
