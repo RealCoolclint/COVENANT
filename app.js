@@ -437,8 +437,13 @@ const Wizard = (() => {
     validateBtn.type = 'button';
     validateBtn.className = 'btn btn-primary';
     validateBtn.textContent = 'VALIDER LA SIGNATURE';
-    validateBtn.addEventListener('click', () => {
+    validateBtn.addEventListener('click', async () => {
       if (!_signaturePad || _signaturePad.isEmpty()) return;
+      validateBtn.disabled = true;
+      validateBtn.textContent = 'GÉNÉRATION...';
+      await generateAndDownloadPDF();
+      validateBtn.disabled = false;
+      validateBtn.textContent = 'VALIDER LA SIGNATURE';
       renderScreenConfirm();
       showScreen('screen-confirm');
     });
@@ -512,6 +517,216 @@ const Wizard = (() => {
     screen.appendChild(wrap);
   }
 
+  async function generateAndDownloadPDF() {
+    const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+
+    function sanitizeFilenamePart(str) {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+    }
+
+    const fileDate = new Date();
+    const yy = String(fileDate.getFullYear()).slice(-2);
+    const mm = String(fileDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(fileDate.getDate()).padStart(2, '0');
+    const formatPart = (wizardState.format || '').replace(/\s+/g, '-');
+    const nomPrenom = sanitizeFilenamePart(wizardState.nom + wizardState.prenom);
+    const journalistePart = sanitizeFilenamePart(
+      window.covenantSession ? window.covenantSession.profileName : ''
+    );
+    const filename = yy + mm + dd + '_AUTORISATION_' + formatPart + '_' + nomPrenom + '_' + journalistePart + '.pdf';
+
+    const pdfDoc = await PDFDocument.create();
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const colorBlack = rgb(0, 0, 0);
+    const colorSecondary = rgb(0.4, 0.4, 0.4);
+    const colorLegal = rgb(0.15, 0.15, 0.15);
+
+    let page = pdfDoc.addPage([595, 842]);
+
+    function drawText(targetPage, text, x, y, size, font, color) {
+      targetPage.drawText(text, { x, y, size, font, color });
+    }
+
+    function drawWrappedText(text, x, y, maxWidth, size, font, color) {
+      const words = text.split(/\s+/).filter(Boolean);
+      let line = '';
+      let currentY = y;
+      const lineHeight = size + 4;
+
+      function flushLine() {
+        if (!line) return;
+        if (currentY < 60) {
+          page = pdfDoc.addPage([595, 842]);
+          currentY = 780;
+        }
+        drawText(page, line, x, currentY, size, font, color);
+        currentY -= lineHeight;
+        line = '';
+      }
+
+      words.forEach(word => {
+        const testLine = line ? line + ' ' + word : word;
+        const width = font.widthOfTextAtSize(testLine, size);
+        if (width > maxWidth && line) {
+          flushLine();
+          line = word;
+        } else {
+          line = testLine;
+        }
+      });
+      flushLine();
+      return currentY;
+    }
+
+    let logoEmbedded = null;
+    try {
+      const logoRes = await fetch('assets/logo_etudiant.png');
+      if (logoRes.ok) {
+        const logoBuffer = await logoRes.arrayBuffer();
+        logoEmbedded = await pdfDoc.embedPng(logoBuffer);
+      }
+    } catch (e) {
+      logoEmbedded = null;
+    }
+
+    let cursorY = 780;
+
+    if (logoEmbedded) {
+      const logoDims = logoEmbedded.scale(1);
+      const logoWidth = 120;
+      const logoHeight = (logoWidth / logoDims.width) * logoDims.height;
+      page.drawImage(logoEmbedded, { x: 50, y: 760, width: logoWidth, height: logoHeight });
+      cursorY = 740;
+    }
+
+    drawText(page, 'L\'ETUDIANT', 50, cursorY, 13, fontBold, colorBlack);
+    drawText(page, 'AUTORISATION DE DROIT A L\'IMAGE ET A LA VOIX', 50, cursorY - 16, 10, fontRegular, colorSecondary);
+    page.drawLine({
+      start: { x: 50, y: cursorY - 28 },
+      end: { x: 545, y: cursorY - 28 },
+      thickness: 0.5,
+      color: rgb(0.7, 0.7, 0.7)
+    });
+    cursorY -= 50;
+
+    drawText(page, 'STATUT : ' + (wizardState.statut === 'majeur' ? 'MAJEUR' : 'MINEUR'), 50, cursorY, 9, fontBold, colorBlack);
+    cursorY -= 16;
+    drawText(page, 'NOM ET PRENOM : ' + wizardState.prenom + ' ' + wizardState.nom, 50, cursorY, 9, fontRegular, colorBlack);
+    cursorY -= 16;
+    if (wizardState.statut === 'mineur') {
+      drawText(
+        page,
+        'REPRESENTANT LEGAL : ' + wizardState.repPrenom + ' ' + wizardState.repNom + ' — ' + wizardState.repQualite,
+        50,
+        cursorY,
+        9,
+        fontRegular,
+        colorBlack
+      );
+      cursorY -= 16;
+    }
+    drawText(page, 'FORMAT : ' + wizardState.format, 50, cursorY, 9, fontRegular, colorBlack);
+    cursorY -= 16;
+    drawText(page, 'DATE : ' + wizardState.date, 50, cursorY, 9, fontRegular, colorBlack);
+    cursorY -= 16;
+    drawText(
+      page,
+      'JOURNALISTE : ' + (window.covenantSession ? window.covenantSession.profileName : ''),
+      50,
+      cursorY,
+      9,
+      fontRegular,
+      colorBlack
+    );
+    cursorY -= 10;
+    page.drawLine({
+      start: { x: 50, y: cursorY },
+      end: { x: 545, y: cursorY },
+      thickness: 0.3,
+      color: rgb(0.85, 0.85, 0.85)
+    });
+    cursorY -= 16;
+
+    const majeurParagraphs = [
+      'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de votre image et de votre voix, dans les conditions définies ci-après.',
+      'Je, soussigné(e) ' + wizardState.prenom + ' ' + wizardState.nom + ', déclare autoriser expressément la société L\'Etudiant (Société par actions simplifiée à associé unique au capital de 9 430 299,84€, dont le siège social est situé à 52 rue Jacques Hillairet 75012 Paris, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 814 839 783) :',
+      '— à procéder lors du tournage précité à une captation audiovisuelle de mon intervention/ma participation (ci-après la « Captation ») et à incorporer et exploiter tout ou partie de la Captation dans la Vidéo ;',
+      '— le droit de fixer, d\'enregistrer, de numériser, de reproduire, de représenter ou de diffuser la Vidéo intégrant tout ou partie de la Captation, uniquement pour diffusion sur l\'ensemble des réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant entre autres mes attributs de personnalité à savoir le prénom, l\'image et/ou la voix ;',
+      '— le droit d\'extraire toute image tirée de la Vidéo intégrant tout ou partie de la Captation et de représenter, de diffuser tout ou partie de la Vidéo pour diffusion sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant notamment mes attributs de personnalité, à savoir prénom, image et/ou voix ;',
+      '— à reproduire, adapter et représenter tout ou partie de la Captation et de la Vidéo, par tous procédés techniques, par tous moyens, et sur tous supports numériques ou électroniques, en tous formats, permettant la consultation et le téléchargement de la Vidéo, en ligne et hors ligne, sur tous réseaux Internet, en vue de sa diffusion au public sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram).',
+      'Toute autre utilisation et exploitation, notamment toute autre exploitation commerciale de la Captation, en tout ou partie, devra être soumise à autorisation préalable et écrite.',
+      'La Captation et la Vidéo demeureront la propriété exclusive de l\'Etudiant qui s\'interdit de céder la présente autorisation à un tiers.',
+      'L\'Etudiant s\'interdit expressément de procéder à une exploitation susceptible de porter atteinte à la vie privée, à la réputation, à l\'honneur, et notamment sur tout support à caractère pornographique, raciste, xénophobe ou toute autre exploitation qui pourrait être préjudiciable.',
+      'La présente autorisation est consentie à titre gracieux pour une durée de 10 (dix) ans et pour le monde entier.',
+      'Par la signature de la présente autorisation je reconnais avoir pris connaissance des informations ci-dessus.'
+    ];
+
+    const mineurParagraphs = [
+      'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de l\'image et de la voix de votre enfant, dans les conditions définies ci-après.',
+      'Je, soussigné(e) ' + wizardState.repPrenom + ' ' + wizardState.repNom + ', agissant en qualité de ' + wizardState.repQualite + ' de l\'enfant mineur ' + wizardState.prenom + ' ' + wizardState.nom + ', déclare autoriser expressément la société L\'Etudiant (Société par actions simplifiée à associé unique au capital de 9 430 299,84€, dont le siège social est situé à 52 rue Jacques Hillairet 75012 Paris, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 814 839 783) :',
+      '— à procéder lors du tournage précité à une captation audiovisuelle de l\'intervention/la participation de mon enfant mineur (ci-après la « Captation ») et à incorporer et exploiter tout ou partie de la Captation dans la Vidéo ;',
+      '— le droit de fixer, d\'enregistrer, de numériser, de reproduire, de représenter ou de diffuser la Vidéo intégrant tout ou partie de la Captation, uniquement pour diffusion sur l\'ensemble des réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant entre autres les attributs de personnalité de mon enfant à savoir le prénom, l\'image et/ou la voix ;',
+      '— le droit d\'extraire toute image tirée de la Vidéo intégrant tout ou partie de la Captation et de représenter, de diffuser tout ou partie de la Vidéo pour diffusion sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant notamment les attributs de personnalité de mon enfant, à savoir prénom, image et/ou voix ;',
+      '— à reproduire, adapter et représenter tout ou partie de la Captation et de la Vidéo, par tous procédés techniques, par tous moyens, et sur tous supports numériques ou électroniques, en tous formats, permettant la consultation et le téléchargement de la Vidéo, en ligne et hors ligne, sur tous réseaux Internet, en vue de sa diffusion au public sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram).',
+      'Toute autre utilisation et exploitation, notamment toute autre exploitation commerciale de la Captation et des droits de la personnalité de mon enfant, en tout ou partie, devra être soumise à autorisation préalable et écrite du représentant légal.',
+      'La Captation et la Vidéo demeureront la propriété exclusive de l\'Etudiant qui s\'interdit de céder la présente autorisation à un tiers.',
+      'L\'Etudiant s\'interdit expressément de procéder à une exploitation susceptible de porter atteinte à la vie privée, à la réputation, à l\'honneur de mon enfant mineur, et notamment sur tout support à caractère pornographique, raciste, xénophobe ou toute autre exploitation qui pourrait lui être préjudiciable.',
+      'La présente autorisation est consentie à titre gracieux pour une durée de 10 (dix) ans et pour le monde entier.',
+      'Par la signature de la présente autorisation je reconnais avoir pris connaissance des informations ci-dessus.'
+    ];
+
+    const paragraphs = wizardState.statut === 'mineur' ? mineurParagraphs : majeurParagraphs;
+    paragraphs.forEach(paragraph => {
+      cursorY = drawWrappedText(paragraph, 50, cursorY, 495, 8, fontRegular, colorLegal);
+      cursorY -= 8;
+    });
+
+    cursorY -= 20;
+    page.drawLine({
+      start: { x: 50, y: cursorY },
+      end: { x: 545, y: cursorY },
+      thickness: 0.5,
+      color: rgb(0.7, 0.7, 0.7)
+    });
+    cursorY -= 20;
+    drawText(page, 'Lu et approuvé', 50, cursorY, 8, fontRegular, colorSecondary);
+    cursorY -= 10;
+
+    if (_signaturePad && !_signaturePad.isEmpty()) {
+      const signatureDataUrl = _signaturePad.toDataURL('image/png');
+      const signatureBase64 = signatureDataUrl.split(',')[1];
+      const signatureBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
+      const signatureImage = await pdfDoc.embedPng(signatureBytes);
+      const sigDims = signatureImage.scale(1);
+      const sigWidth = Math.min(200, sigDims.width);
+      const sigHeight = (sigWidth / sigDims.width) * sigDims.height;
+      if (cursorY - sigHeight < 60) {
+        page = pdfDoc.addPage([595, 842]);
+        cursorY = 780;
+      }
+      page.drawImage(signatureImage, { x: 50, y: cursorY - sigHeight, width: sigWidth, height: sigHeight });
+      cursorY -= sigHeight + 14;
+    }
+
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const horodatage = 'Signé le ' + wizardState.date + ' à ' + hh + 'h' + min;
+    drawText(page, horodatage, 50, cursorY, 8, fontRegular, rgb(0.4, 0.4, 0.4));
+
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   wizardState.date = formatSystemDate();
 
   return {
@@ -523,7 +738,8 @@ const Wizard = (() => {
     renderScreenRepLegal,
     renderScreenProjet,
     renderScreenSign,
-    renderScreenConfirm
+    renderScreenConfirm,
+    generateAndDownloadPDF
   };
 })();
 
