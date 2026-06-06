@@ -1,9 +1,22 @@
-body {
+body.dark-theme {
   text-transform: uppercase;
 }
 
-#screen-profile {
-  display: flex !important;
+.screen {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
   flex-direction: column;
-  opacity: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.screen.active {
+  display: flex;
+}
+
+#screen-profile.active {
+  display: flex;
 }
