@@ -313,13 +313,6 @@ const Wizard = (() => {
     header.appendChild(title);
     wrap.appendChild(header);
 
-    const sujetInput = document.createElement('input');
-    sujetInput.className = 'text-input';
-    sujetInput.type = 'text';
-    sujetInput.value = wizardState.sujet;
-    sujetInput.addEventListener('input', () => { wizardState.sujet = sujetInput.value.trim(); });
-    wrap.appendChild(createFieldGroup('SUJET', sujetInput));
-
     const formatSelect = document.createElement('select');
     formatSelect.className = 'text-input';
     const emptyOption = document.createElement('option');
@@ -349,7 +342,7 @@ const Wizard = (() => {
     nextBtn.textContent = 'SUIVANT';
     nextBtn.addEventListener('click', () => {
       wizardState.format = formatSelect.value;
-      if (!wizardState.sujet || !wizardState.format) return;
+      if (!wizardState.format) return;
       renderScreenSign();
       showScreen('screen-sign');
     });
