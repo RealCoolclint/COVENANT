@@ -717,14 +717,43 @@ const WebProfileSelector = (() => {
     const container = _getContainer();
     if (!container) return;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'covenant-ps-confirm flex-center gap-lg';
+    const card = document.createElement('div');
+    card.className = 'ps-card';
 
-    wrap.appendChild(_createAvatarFromSession(session));
+    const header = document.createElement('div');
+    header.className = 'ps-header';
 
-    const title = document.createElement('h1');
+    const patch = document.createElement('img');
+    patch.className = 'ps-app-patch';
+    patch.src = 'assets/patch_COVENANT.png';
+    patch.alt = 'COVENANT';
+
+    const appName = document.createElement('div');
+    appName.className = 'ps-app-name';
+    appName.textContent = 'COVENANT';
+
+    const title = document.createElement('div');
+    title.className = 'ps-title';
     title.textContent = 'TU ES BIEN ' + (session.profileName || '') + ' ?';
-    wrap.appendChild(title);
+
+    header.appendChild(patch);
+    header.appendChild(appName);
+    header.appendChild(title);
+
+    const profileCard = document.createElement('div');
+    profileCard.className = 'ps-profile-card selected is-static';
+    profileCard.innerHTML = '<div class="ps-check">&#10003;</div>';
+    profileCard.appendChild(_createAvatarFromSession(session));
+    const name = document.createElement('div');
+    name.className = 'ps-profile-name';
+    name.textContent = session.profileName || '';
+    profileCard.appendChild(name);
+    if (session.profileRole === 'admin') {
+      const badge = document.createElement('span');
+      badge.className = 'ps-badge-admin';
+      badge.textContent = 'ADMIN';
+      profileCard.appendChild(badge);
+    }
 
     const actions = document.createElement('div');
     actions.className = 'covenant-ps-actions flex gap-md';
@@ -753,8 +782,10 @@ const WebProfileSelector = (() => {
 
     actions.appendChild(confirmBtn);
     actions.appendChild(changeBtn);
-    wrap.appendChild(actions);
-    container.appendChild(wrap);
+    card.appendChild(header);
+    card.appendChild(profileCard);
+    card.appendChild(actions);
+    container.appendChild(card);
   }
 
   function _notifyReady(session) {

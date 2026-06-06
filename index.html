@@ -15,7 +15,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <script>
+    (function() {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'style.css?v=' + encodeURIComponent(window.APP_VERSION);
+      document.head.appendChild(link);
+    })();
+  </script>
 </head>
 <body class="dark-theme">
   <div id="mercury-opening">
@@ -43,6 +50,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script>
+    document.write('<script src="app.js?v=' + encodeURIComponent(window.APP_VERSION) + '"><\/script>');
+  </script>
   <script>
   (function() {
     const opening = document.getElementById('mercury-opening');

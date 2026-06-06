@@ -167,6 +167,10 @@ body {
   background: var(--bg-elevated);
 }
 
+.ps-profile-card.is-static {
+  cursor: default;
+}
+
 .ps-check {
   position: absolute;
   top: 6px;
