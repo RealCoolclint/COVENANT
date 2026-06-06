@@ -1,3 +1,7 @@
+const MONDAY_API_URL = 'https://api.monday.com/v1/';
+const PROXY_URL = 'https://musical-tanuki-a691a5.netlify.app/.netlify/functions/proxy';
+const MONDAY_API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjYxODY3ODk2NCwiYWFpIjoxMSwidWlkIjo2NzA4Mjk3NSwiaWFkIjoiMjAyNi0wMi0wOVQwOToxMzowOC45NzNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTUxMzM5NDAsInJnbiI6ImV1YzEifQ.FsgVKBIv_xaWxaA4nzgJQVBnNWVTtLTeXY9IukoaMFI';
+
 const WebProfileSelector = (() => {
   const PROFILES_URL = 'https://realcoolclint.github.io/tranquility-core/profiles-public.json';
   const LS_KEY = 'ts_session_covenant';
