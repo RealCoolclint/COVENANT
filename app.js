@@ -26,6 +26,7 @@ const Wizard = (() => {
     sujet: '',
     format: '',
     date: '',
+    lieuTournage: '',
     journalistePrenom: '',
     journalisteNom: ''
   };
@@ -81,6 +82,7 @@ const Wizard = (() => {
     wizardState.repContactType = 'email';
     wizardState.sujet = '';
     wizardState.format = '';
+    wizardState.lieuTournage = '';
     wizardState.date = formatSystemDate();
     wizardState.journalisteNom = '';
     wizardState.journalistePrenom = (window.covenantSession && window.covenantSession.profileName) || '';
@@ -313,6 +315,13 @@ const Wizard = (() => {
     header.appendChild(title);
     wrap.appendChild(header);
 
+    const lieuInput = document.createElement('input');
+    lieuInput.className = 'text-input';
+    lieuInput.type = 'text';
+    lieuInput.value = wizardState.lieuTournage || '';
+    lieuInput.addEventListener('input', () => { wizardState.lieuTournage = lieuInput.value.trim(); });
+    wrap.appendChild(createFieldGroup('LIEU DE TOURNAGE', lieuInput));
+
     const formatSelect = document.createElement('select');
     formatSelect.className = 'text-input';
     const emptyOption = document.createElement('option');
@@ -342,7 +351,7 @@ const Wizard = (() => {
     nextBtn.textContent = 'SUIVANT';
     nextBtn.addEventListener('click', () => {
       wizardState.format = formatSelect.value;
-      if (!wizardState.format) return;
+      if (!wizardState.format || !wizardState.lieuTournage) return;
       renderScreenSign();
       showScreen('screen-sign');
     });
@@ -594,59 +603,40 @@ const Wizard = (() => {
 
     if (logoEmbedded) {
       const logoDims = logoEmbedded.scale(1);
+      const pageWidth = 595;
       const logoWidth = 120;
+      const logoX = (pageWidth - logoWidth) / 2;
       const logoHeight = (logoWidth / logoDims.width) * logoDims.height;
-      page.drawImage(logoEmbedded, { x: 50, y: 760, width: logoWidth, height: logoHeight });
+      page.drawImage(logoEmbedded, { x: logoX, y: 760, width: logoWidth, height: logoHeight });
       cursorY = 740;
     }
 
-    drawText(page, 'L\'ETUDIANT', 50, cursorY, 13, fontBold, colorBlack);
-    drawText(page, 'AUTORISATION DE DROIT A L\'IMAGE ET A LA VOIX', 50, cursorY - 16, 10, fontRegular, colorSecondary);
+    const titleText = 'AUTORISATION DE DROIT A L\'IMAGE ET A LA VOIX';
+    const titleWidth = fontBold.widthOfTextAtSize(titleText, 10);
+    const titleX = (595 - titleWidth) / 2;
+    drawText(page, titleText, titleX, cursorY, 10, fontBold, colorBlack);
     page.drawLine({
-      start: { x: 50, y: cursorY - 28 },
-      end: { x: 545, y: cursorY - 28 },
+      start: { x: 50, y: cursorY - 16 },
+      end: { x: 545, y: cursorY - 16 },
       thickness: 0.5,
       color: rgb(0.7, 0.7, 0.7)
     });
-    cursorY -= 50;
+    cursorY -= 40;
 
-    drawText(page, 'STATUT : ' + (wizardState.statut === 'majeur' ? 'MAJEUR' : 'MINEUR'), 50, cursorY, 9, fontBold, colorBlack);
-    cursorY -= 16;
-    drawText(page, 'NOM ET PRENOM : ' + wizardState.prenom + ' ' + wizardState.nom, 50, cursorY, 9, fontRegular, colorBlack);
-    cursorY -= 16;
-    if (wizardState.statut === 'mineur') {
-      drawText(
-        page,
-        'REPRESENTANT LEGAL : ' + wizardState.repPrenom + ' ' + wizardState.repNom + ' — ' + wizardState.repQualite,
-        50,
-        cursorY,
-        9,
-        fontRegular,
-        colorBlack
-      );
-      cursorY -= 16;
-    }
-    drawText(page, 'FORMAT : ' + wizardState.format, 50, cursorY, 9, fontRegular, colorBlack);
-    cursorY -= 16;
-    drawText(page, 'DATE : ' + wizardState.date, 50, cursorY, 9, fontRegular, colorBlack);
-    cursorY -= 16;
-    drawText(
-      page,
-      'JOURNALISTE : ' + (window.covenantSession ? window.covenantSession.profileName : ''),
-      50,
-      cursorY,
-      9,
-      fontRegular,
-      colorBlack
-    );
-    cursorY -= 10;
-    page.drawLine({
-      start: { x: 50, y: cursorY },
-      end: { x: 545, y: cursorY },
-      thickness: 0.3,
-      color: rgb(0.85, 0.85, 0.85)
+    page.drawRectangle({
+      x: 50,
+      y: cursorY - 18,
+      width: 495,
+      height: 20,
+      color: rgb(0.94, 0.94, 0.94)
     });
-    cursorY -= 16;
+    const statutLabel = wizardState.statut === 'majeur' ? 'MAJEUR' : 'MINEUR';
+    const nomComplet = (wizardState.prenom + ' ' + wizardState.nom).toUpperCase();
+    const bandeau = statutLabel + '  |  ' + nomComplet + '  |  ' + wizardState.format.toUpperCase() + '  |  ' + wizardState.date;
+    const bandeauWidth = fontBold.widthOfTextAtSize(bandeau, 8);
+    const bandeauX = (595 - bandeauWidth) / 2;
+    drawText(page, bandeau, bandeauX, cursorY - 13, 8, fontBold, rgb(0.15, 0.15, 0.15));
+    cursorY -= 30;
 
     const majeurParagraphs = [
       'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de votre image et de votre voix, dans les conditions définies ci-après.',
@@ -714,6 +704,18 @@ const Wizard = (() => {
     const min = String(now.getMinutes()).padStart(2, '0');
     const horodatage = 'Signé le ' + wizardState.date + ' à ' + hh + 'h' + min;
     drawText(page, horodatage, 50, cursorY, 8, fontRegular, rgb(0.4, 0.4, 0.4));
+    cursorY -= 16;
+    drawText(page, 'FAIT À : ' + (wizardState.lieuTournage || '').toUpperCase(), 50, cursorY, 8, fontBold, rgb(0.15, 0.15, 0.15));
+    cursorY -= 16;
+    drawText(
+      page,
+      'RESPONSABLE SIGNATURE : ' + (window.covenantSession ? window.covenantSession.profileName.toUpperCase() : ''),
+      50,
+      cursorY,
+      8,
+      fontBold,
+      rgb(0.15, 0.15, 0.15)
+    );
 
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
