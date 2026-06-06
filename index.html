@@ -4,7 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>COVENANT — FIDES SCRIPTA MANET</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://realcoolclint.github.io https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; connect-src 'self' https://api.monday.com https://api.resend.com https://realcoolclint.github.io https://musical-tanuki-a691a5.netlify.app https://cdn.jsdelivr.net; img-src 'self' data: blob: https://raw.githubusercontent.com; worker-src blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://realcoolclint.github.io https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; connect-src 'self' https://api.monday.com https://api.resend.com https://realcoolclint.github.io https://musical-tanuki-a691a5.netlify.app https://cdn.jsdelivr.net; img-src 'self' data: blob: https://raw.githubusercontent.com; media-src 'self' blob:; worker-src blob:">
+  <script>
+    const now = new Date();
+    const jj = String(now.getDate()).padStart(2,'0');
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const aa = String(now.getFullYear()).slice(-2);
+    window.APP_VERSION = 'V1.' + jj + '.' + mm + '.' + aa;
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dark-theme">
@@ -31,63 +41,59 @@
   <div id="screen-sign" class="screen"></div>
   <div id="screen-confirm" class="screen"></div>
 
-  <script>
-(function() {
-  const opening = document.getElementById('mercury-opening');
-  const versionEl = document.getElementById('mercury-version');
-  const radarCircle = document.getElementById('mercury-radar-circle');
-  const flash = document.getElementById('mercury-flash');
-  const canvas = document.getElementById('mercury-grid');
-  const ctx = canvas.getContext('2d');
-
-  const now = new Date();
-  const jj = String(now.getDate()).padStart(2,'0');
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const aa = now.getFullYear();
-  if (versionEl) versionEl.textContent = 'V1.' + jj + '.' + mm + '.' + aa;
-
-  function drawGrid() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const spacing = 28;
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    for (let x = 0; x < canvas.width; x += spacing) {
-      for (let y = 0; y < canvas.height; y += spacing) {
-        ctx.beginPath();
-        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-  drawGrid();
-
-  setTimeout(() => { opening.style.opacity = '1'; }, 180);
-  setTimeout(() => {
-    const patch = document.getElementById('mercury-patch');
-    if (patch) patch.classList.add('visible');
-  }, 550);
-  setTimeout(() => {
-    if (versionEl) versionEl.classList.add('visible');
-  }, 1650);
-  setTimeout(() => {
-    radarCircle.style.transition = 'stroke-dashoffset 1.5s ease';
-    radarCircle.style.strokeDashoffset = '0';
-  }, 410);
-  setTimeout(() => {
-    flash.style.opacity = '1';
-  }, 4000);
-  setTimeout(() => {
-    opening.style.display = 'none';
-    flash.style.transition = 'opacity 0.5s ease-out';
-    flash.style.opacity = '0';
-    document.getElementById('screen-profile').classList.add('active');
-    WebProfileSelector.init();
-  }, 4300);
-})();
-</script>
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script>
+  (function() {
+    const opening = document.getElementById('mercury-opening');
+    const versionEl = document.getElementById('mercury-version');
+    const radarCircle = document.getElementById('mercury-radar-circle');
+    const flash = document.getElementById('mercury-flash');
+    const canvas = document.getElementById('mercury-grid');
+    const ctx = canvas.getContext('2d');
+
+    if (versionEl) versionEl.textContent = window.APP_VERSION || '';
+
+    function drawGrid() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const spacing = 28;
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      for (let x = 0; x < canvas.width; x += spacing) {
+        for (let y = 0; y < canvas.height; y += spacing) {
+          ctx.beginPath();
+          ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    drawGrid();
+
+    setTimeout(() => { opening.style.opacity = '1'; }, 180);
+    setTimeout(() => {
+      const patch = document.getElementById('mercury-patch');
+      if (patch) patch.classList.add('visible');
+    }, 550);
+
+    setTimeout(() => {
+      if (versionEl) versionEl.classList.add('visible');
+    }, 1650);
+    setTimeout(() => {
+      radarCircle.style.transition = 'stroke-dashoffset 1.5s ease';
+      radarCircle.style.strokeDashoffset = '0';
+    }, 410);
+    setTimeout(() => {
+      flash.style.opacity = '1';
+    }, 4000);
+    setTimeout(() => {
+      opening.style.display = 'none';
+      flash.style.transition = 'opacity 0.5s ease-out';
+      flash.style.opacity = '0';
+      if (typeof window.onMercuryComplete === 'function') window.onMercuryComplete();
+    }, 4230);
+  })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

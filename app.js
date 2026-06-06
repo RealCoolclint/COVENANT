@@ -819,3 +819,8 @@ const WebProfileSelector = (() => {
 
   return { init, onSessionReady: null };
 })();
+
+window.onMercuryComplete = function() {
+  document.getElementById('screen-profile').classList.add('active');
+  WebProfileSelector.init();
+};
