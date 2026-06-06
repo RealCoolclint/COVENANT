@@ -623,20 +623,7 @@ const Wizard = (() => {
     });
     cursorY -= 40;
 
-    page.drawRectangle({
-      x: 50,
-      y: cursorY - 18,
-      width: 495,
-      height: 20,
-      color: rgb(0.94, 0.94, 0.94)
-    });
-    const statutLabel = wizardState.statut === 'majeur' ? 'MAJEUR' : 'MINEUR';
-    const nomComplet = (wizardState.prenom + ' ' + wizardState.nom).toUpperCase();
-    const bandeau = statutLabel + '  |  ' + nomComplet + '  |  ' + wizardState.format.toUpperCase() + '  |  ' + wizardState.date;
-    const bandeauWidth = fontBold.widthOfTextAtSize(bandeau, 8);
-    const bandeauX = (595 - bandeauWidth) / 2;
-    drawText(page, bandeau, bandeauX, cursorY - 13, 8, fontBold, rgb(0.15, 0.15, 0.15));
-    cursorY -= 30;
+    const titreVideo = 'Vidéo « ' + wizardState.format + ' »';
 
     const majeurParagraphs = [
       'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de votre image et de votre voix, dans les conditions définies ci-après.',
@@ -666,7 +653,8 @@ const Wizard = (() => {
       'Par la signature de la présente autorisation je reconnais avoir pris connaissance des informations ci-dessus.'
     ];
 
-    const paragraphs = wizardState.statut === 'mineur' ? mineurParagraphs : majeurParagraphs;
+    const paragraphs = (wizardState.statut === 'mineur' ? mineurParagraphs : majeurParagraphs)
+      .map(p => p.replace(/Vidéo/g, titreVideo));
     paragraphs.forEach(paragraph => {
       cursorY = drawWrappedText(paragraph, 50, cursorY, 495, 8, fontRegular, colorLegal);
       cursorY -= 8;
@@ -706,16 +694,6 @@ const Wizard = (() => {
     drawText(page, horodatage, 50, cursorY, 8, fontRegular, rgb(0.4, 0.4, 0.4));
     cursorY -= 16;
     drawText(page, 'FAIT À : ' + (wizardState.lieuTournage || '').toUpperCase(), 50, cursorY, 8, fontBold, rgb(0.15, 0.15, 0.15));
-    cursorY -= 16;
-    drawText(
-      page,
-      'RESPONSABLE SIGNATURE : ' + (window.covenantSession ? window.covenantSession.profileName.toUpperCase() : ''),
-      50,
-      cursorY,
-      8,
-      fontBold,
-      rgb(0.15, 0.15, 0.15)
-    );
 
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
