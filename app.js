@@ -477,7 +477,7 @@ const Wizard = (() => {
     title.textContent = 'AUTORISATION ENREGISTRÉE';
 
     const emailStatus = document.createElement('p');
-    emailStatus.className = window._covenantEmailResult === 'success' ? 'text-secondary' : 'covenant-email-error';
+    emailStatus.className = window._covenantEmailResult === 'success' ? 'covenant-email-success' : 'covenant-email-error';
     emailStatus.textContent = window._covenantEmailResult === 'success'
       ? 'EMAIL ENVOYÉ'
       : 'ENVOI EMAIL ÉCHOUÉ — PDF TÉLÉCHARGÉ LOCALEMENT';

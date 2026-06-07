@@ -455,6 +455,8 @@ select.text-input {
 .gap-md { gap: 16px; }
 .gap-lg { gap: 24px; }
 .text-secondary { color: var(--text-secondary); }
+.covenant-email-success { color: #4ade80; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.covenant-email-error { color: #f87171; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .text-primary { color: var(--text-primary); }
 .btn-ghost {
   background: transparent;
