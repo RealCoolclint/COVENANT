@@ -26,6 +26,7 @@ exports.handler = async (event) => {
 
     const body = JSON.parse(event.body || '{}');
     const { pdfBase64, filename, interviewe, format, date, journaliste, statut } = body;
+    const { responsableEmail } = body;
 
     if (!pdfBase64 || !filename) {
       throw new Error('pdfBase64 and filename are required');
@@ -68,6 +69,27 @@ exports.handler = async (event) => {
     if (!res.ok) {
       const errBody = await res.text();
       throw new Error(errBody || 'Resend API error');
+    }
+
+    if (responsableEmail && responsableEmail !== 'mpavloff@letudiant.fr') {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'onboarding@resend.dev',
+            to: [responsableEmail],
+            subject: 'COVENANT — Votre copie — ' + subject,
+            html: html,
+            attachments: [{ filename, content: pdfBase64 }]
+          })
+        });
+      } catch (e) {
+        // Echec silencieux — copie responsable est une sécurité, pas un bloquant
+      }
     }
 
     return {

@@ -570,6 +570,23 @@ const Wizard = (() => {
     const actions = document.createElement('div');
     actions.className = 'covenant-confirm-actions';
 
+    const downloadBtn = document.createElement('button');
+    downloadBtn.type = 'button';
+    downloadBtn.className = 'btn btn-primary';
+    downloadBtn.textContent = 'TÉLÉCHARGER LE PDF';
+    downloadBtn.addEventListener('click', () => {
+      if (!window._covenantPdfBlob || !window._covenantPdfFilename) return;
+      const url = URL.createObjectURL(window._covenantPdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = window._covenantPdfFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    actions.appendChild(downloadBtn);
+
     const newSignBtn = document.createElement('button');
     newSignBtn.type = 'button';
     newSignBtn.className = 'btn btn-primary';
@@ -767,20 +784,18 @@ const Wizard = (() => {
 
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // Stockage du blob pour téléchargement manuel depuis l'écran de confirmation
+    window._covenantPdfBlob = blob;
+    window._covenantPdfFilename = filename;
 
     // Envoi email via proxy Netlify
     try {
       const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
       const journaliste = (window.covenantSession && window.covenantSession.profileName)
         || Wizard.wizardState.journalistePrenom || '';
+      const responsableEmail = (window.covenantSession && window.covenantSession.profileEmailPrefix)
+        ? window.covenantSession.profileEmailPrefix + '@letudiant.fr'
+        : null;
       const payload = {
         pdfBase64,
         filename,
@@ -788,6 +803,7 @@ const Wizard = (() => {
         format: Wizard.wizardState.format,
         date: Wizard.wizardState.date,
         journaliste,
+        responsableEmail: responsableEmail,
         statut: Wizard.wizardState.statut
       };
       const response = await fetch('https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email', {
@@ -854,7 +870,8 @@ const WebProfileSelector = (() => {
       profileRole: profile.role,
       profileAvatar: profile.avatar || null,
       profileInitiales: profile.initiales,
-      profileColor: profile.color || 'var(--accent)'
+      profileColor: profile.color || 'var(--accent)',
+      profileEmailPrefix: profile.emailPrefix || null
     };
     localStorage.setItem(LS_KEY, JSON.stringify(session));
     return session;
