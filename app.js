@@ -424,7 +424,6 @@ const Wizard = (() => {
       'STATUT : ' + statutLabel,
       'NOM COMPLET : ' + fullName(wizardState.prenom, wizardState.nom),
       'FORMAT : ' + wizardState.format,
-      'SUJET : ' + wizardState.sujet,
       'DATE : ' + wizardState.date
     ].forEach(line => {
       const p = document.createElement('p');
