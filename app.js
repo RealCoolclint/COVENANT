@@ -476,6 +476,14 @@ const Wizard = (() => {
     const title = document.createElement('h2');
     title.textContent = 'AUTORISATION ENREGISTRÉE';
 
+    const emailStatus = document.createElement('p');
+    emailStatus.className = window._covenantEmailResult === 'success' ? 'text-secondary' : 'covenant-email-error';
+    emailStatus.textContent = window._covenantEmailResult === 'success'
+      ? 'EMAIL ENVOYÉ'
+      : 'ENVOI EMAIL ÉCHOUÉ — PDF TÉLÉCHARGÉ LOCALEMENT';
+    wrap.appendChild(title);
+    wrap.appendChild(emailStatus);
+
     const recap = document.createElement('div');
     recap.className = 'covenant-confirm-recap gap-sm';
     const statutLabel = wizardState.statut === 'mineur' ? 'MINEUR' : 'MAJEUR';
@@ -520,7 +528,6 @@ const Wizard = (() => {
 
     actions.appendChild(newSignBtn);
     actions.appendChild(finishBtn);
-    wrap.appendChild(title);
     wrap.appendChild(recap);
     wrap.appendChild(actions);
     screen.appendChild(wrap);
@@ -705,6 +712,31 @@ const Wizard = (() => {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    // Envoi email via proxy Netlify
+    try {
+      const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
+      const journaliste = (window.covenantSession && window.covenantSession.profileName)
+        || Wizard.wizardState.journalistePrenom || '';
+      const payload = {
+        pdfBase64,
+        filename,
+        interviewe: (Wizard.wizardState.prenom + ' ' + Wizard.wizardState.nom).trim(),
+        format: Wizard.wizardState.format,
+        date: Wizard.wizardState.date,
+        journaliste,
+        statut: Wizard.wizardState.statut
+      };
+      const response = await fetch('https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      window._covenantEmailResult = response.ok ? 'success' : 'error';
+    } catch (e) {
+      window._covenantEmailResult = 'error';
+    }
   }
 
   wizardState.date = formatSystemDate();
