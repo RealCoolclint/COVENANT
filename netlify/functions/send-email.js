@@ -41,7 +41,7 @@ exports.handler = async (event) => {
         <tr><td><strong>Interviewé</strong></td><td>${interviewe || ''}</td></tr>
         <tr><td><strong>Format</strong></td><td>${format || ''}</td></tr>
         <tr><td><strong>Date</strong></td><td>${date || ''}</td></tr>
-        <tr><td><strong>Journaliste</strong></td><td>${journaliste || ''}</td></tr>
+        <tr><td><strong>Responsable signature</strong></td><td>${journaliste || ''}</td></tr>
       </table>
     `;
 
