@@ -1,5 +1,34 @@
 const Wizard = (() => {
   const LEGAL_TEXT_PLACEHOLDER = '[ TEXTE JURIDIQUE — À INTÉGRER ]';
+
+  const LEGAL_MAJEUR = [
+    'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de votre image et de votre voix, dans les conditions définies ci-après.',
+    'Je, soussigné(e), déclare autoriser expressément la société L\'Etudiant (Société par actions simplifiée à associé unique au capital de 9 430 299,84€, dont le siège social est situé à 52 rue Jacques Hillairet 75012 Paris, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 814 839 783) :',
+    '— à procéder lors du tournage précité à une captation audiovisuelle de mon intervention/ma participation (ci-après la « Captation ») et à incorporer et exploiter tout ou partie de la Captation dans la Vidéo ;',
+    '— le droit de fixer, d\'enregistrer, de numériser, de reproduire, de représenter ou de diffuser la Vidéo intégrant tout ou partie de la Captation, uniquement pour diffusion sur l\'ensemble des réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant entre autres mes attributs de personnalité à savoir le prénom, l\'image et/ou la voix ;',
+    '— le droit d\'extraire toute image tirée de la Vidéo intégrant tout ou partie de la Captation et de représenter, de diffuser tout ou partie de la Vidéo pour diffusion sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant notamment mes attributs de personnalité, à savoir prénom, image et/ou voix ;',
+    '— à reproduire, adapter et représenter tout ou partie de la Captation et de la Vidéo, par tous procédés techniques, par tous moyens, et sur tous supports numériques ou électroniques, en tous formats, permettant la consultation et le téléchargement de la Vidéo, en ligne et hors ligne, sur tous réseaux Internet, en vue de sa diffusion au public sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram).',
+    'Toute autre utilisation et exploitation, notamment toute autre exploitation commerciale de la Captation, en tout ou partie, devra être soumise à autorisation préalable et écrite.',
+    'La Captation et la Vidéo demeureront la propriété exclusive de l\'Etudiant qui s\'interdit de céder la présente autorisation à un tiers.',
+    'L\'Etudiant s\'interdit expressément de procéder à une exploitation susceptible de porter atteinte à la vie privée, à la réputation, à l\'honneur, et notamment sur tout support à caractère pornographique, raciste, xénophobe ou toute autre exploitation qui pourrait être préjudiciable.',
+    'La présente autorisation est consentie à titre gracieux pour une durée de 10 (dix) ans et pour le monde entier.',
+    'Par la signature de la présente autorisation je reconnais avoir pris connaissance des informations ci-dessus.'
+  ];
+
+  const LEGAL_MINEUR = [
+    'Dans le contexte de ce tournage nous soumettons à votre signature la présente autorisation pour l\'enregistrement, la reproduction et la représentation de l\'image et de la voix de votre enfant, dans les conditions définies ci-après.',
+    'Je, soussigné(e), agissant en qualité de représentant légal de l\'enfant mineur, déclare autoriser expressément la société L\'Etudiant (Société par actions simplifiée à associé unique au capital de 9 430 299,84€, dont le siège social est situé à 52 rue Jacques Hillairet 75012 Paris, immatriculée au Registre du Commerce et des Sociétés de Paris sous le numéro 814 839 783) :',
+    '— à procéder lors du tournage précité à une captation audiovisuelle de l\'intervention/la participation de mon enfant mineur (ci-après la « Captation ») et à incorporer et exploiter tout ou partie de la Captation dans la Vidéo ;',
+    '— le droit de fixer, d\'enregistrer, de numériser, de reproduire, de représenter ou de diffuser la Vidéo intégrant tout ou partie de la Captation, uniquement pour diffusion sur l\'ensemble des réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant entre autres les attributs de personnalité de mon enfant à savoir le prénom, l\'image et/ou la voix ;',
+    '— le droit d\'extraire toute image tirée de la Vidéo intégrant tout ou partie de la Captation et de représenter, de diffuser tout ou partie de la Vidéo pour diffusion sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram), comprenant notamment les attributs de personnalité de mon enfant, à savoir prénom, image et/ou voix ;',
+    '— à reproduire, adapter et représenter tout ou partie de la Captation et de la Vidéo, par tous procédés techniques, par tous moyens, et sur tous supports numériques ou électroniques, en tous formats, permettant la consultation et le téléchargement de la Vidéo, en ligne et hors ligne, sur tous réseaux Internet, en vue de sa diffusion au public sur les réseaux sociaux de L\'ETUDIANT (TikTok, Youtube et Instagram).',
+    'Toute autre utilisation et exploitation, notamment toute autre exploitation commerciale de la Captation et des droits de la personnalité de mon enfant, en tout ou partie, devra être soumise à autorisation préalable et écrite du représentant légal.',
+    'La Captation et la Vidéo demeureront la propriété exclusive de l\'Etudiant qui s\'interdit de céder la présente autorisation à un tiers.',
+    'L\'Etudiant s\'interdit expressément de procéder à une exploitation susceptible de porter atteinte à la vie privée, à la réputation, à l\'honneur de mon enfant mineur, et notamment sur tout support à caractère pornographique, raciste, xénophobe ou toute autre exploitation qui pourrait lui être préjudiciable.',
+    'La présente autorisation est consentie à titre gracieux pour une durée de 10 (dix) ans et pour le monde entier.',
+    'Par la signature de la présente autorisation je reconnais avoir pris connaissance des informations ci-dessus.'
+  ];
+
   const FORMAT_OPTIONS = [
     'Micro Trottoir',
     'Interview',
@@ -367,7 +396,7 @@ const Wizard = (() => {
     canvas.width = canvas.offsetWidth * ratio;
     canvas.height = canvas.offsetHeight * ratio;
     canvas.getContext('2d').scale(ratio, ratio);
-    _signaturePad = new SignaturePad(canvas);
+    _signaturePad = new SignaturePad(canvas, { penColor: '#ffffff' });
   }
 
   function renderScreenSign() {
@@ -413,10 +442,14 @@ const Wizard = (() => {
     const legalBlock = document.createElement('div');
     legalBlock.className = 'covenant-legal-text';
     legalBlock.hidden = true;
-    const legalText = document.createElement('p');
-    legalText.className = 'text-secondary';
-    legalText.textContent = LEGAL_TEXT_PLACEHOLDER;
-    legalBlock.appendChild(legalText);
+    const paragraphs = wizardState.statut === 'mineur' ? LEGAL_MINEUR : LEGAL_MAJEUR;
+    paragraphs.forEach(p => {
+      const para = document.createElement('p');
+      para.className = 'text-secondary';
+      para.style.marginBottom = '0.75rem';
+      para.textContent = p;
+      legalBlock.appendChild(para);
+    });
 
     legalToggleBtn.addEventListener('click', () => {
       legalBlock.hidden = !legalBlock.hidden;
@@ -471,39 +504,71 @@ const Wizard = (() => {
     if (!screen) return;
 
     const wrap = document.createElement('div');
-    wrap.className = 'covenant-wizard-screen flex-center gap-lg';
+    wrap.className = 'covenant-confirm-screen';
 
+    // Coche animée SVG
+    const svgWrap = document.createElement('div');
+    svgWrap.className = 'covenant-checkmark-wrap';
+    svgWrap.innerHTML = '<svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle class="covenant-checkmark-circle" cx="26" cy="26" r="25"/>' +
+      '<path class="covenant-checkmark-tick" d="M14 27 l8 8 l16-16"/>' +
+      '</svg>';
+    wrap.appendChild(svgWrap);
+
+    // Titre
     const title = document.createElement('h2');
+    title.className = 'covenant-confirm-title';
     title.textContent = 'AUTORISATION ENREGISTRÉE';
+    wrap.appendChild(title);
 
+    // Statut email
     const emailStatus = document.createElement('p');
     emailStatus.className = window._covenantEmailResult === 'success' ? 'covenant-email-success' : 'covenant-email-error';
     emailStatus.textContent = window._covenantEmailResult === 'success'
       ? 'EMAIL ENVOYÉ'
       : 'ENVOI EMAIL ÉCHOUÉ — PDF TÉLÉCHARGÉ LOCALEMENT';
-    wrap.appendChild(title);
+    emailStatus.style.opacity = '0';
+    emailStatus.style.animation = 'covenant-fade-in 0.4s ease 1.0s forwards';
     wrap.appendChild(emailStatus);
 
-    const recap = document.createElement('div');
-    recap.className = 'covenant-confirm-recap gap-sm';
+    // Checklist dynamique
     const statutLabel = wizardState.statut === 'mineur' ? 'MINEUR' : 'MAJEUR';
     const journaliste = (window.covenantSession && window.covenantSession.profileName)
       || fullName(wizardState.journalistePrenom, wizardState.journalisteNom);
-    [
-      'STATUT : ' + statutLabel,
-      'NOM INTERVIEWÉ : ' + fullName(wizardState.prenom, wizardState.nom),
-      'FORMAT : ' + wizardState.format,
-      'DATE : ' + wizardState.date,
-      'RESPONSABLE SIGNATURE : ' + journaliste
-    ].forEach(line => {
-      const p = document.createElement('p');
-      p.className = 'text-primary';
-      p.textContent = line;
-      recap.appendChild(p);
+
+    const checklistItems = [
+      { label: 'STATUT', value: statutLabel },
+      { label: 'INTERVIEWÉ', value: fullName(wizardState.prenom, wizardState.nom) },
+      { label: 'FORMAT', value: wizardState.format },
+      { label: 'DATE', value: wizardState.date },
+      { label: 'RESPONSABLE', value: journaliste },
+      { label: 'PDF', value: 'GÉNÉRÉ' },
+      { label: 'EMAIL', value: window._covenantEmailResult === 'success' ? 'ENVOYÉ' : 'ÉCHEC' }
+    ];
+
+    const checklist = document.createElement('div');
+    checklist.className = 'covenant-checklist';
+
+    checklistItems.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'covenant-checklist-item';
+      row.style.animationDelay = (1.1 + i * 0.15) + 's';
+      row.innerHTML =
+        '<span class="covenant-checklist-check">✓</span>' +
+        '<span class="covenant-checklist-label">' + item.label + '</span>' +
+        '<span class="covenant-checklist-value">' + item.value + '</span>';
+      checklist.appendChild(row);
+
+      setTimeout(() => {
+        row.classList.add('visible');
+      }, (1100 + i * 150));
     });
 
+    wrap.appendChild(checklist);
+
+    // Actions
     const actions = document.createElement('div');
-    actions.className = 'flex gap-md';
+    actions.className = 'covenant-confirm-actions';
 
     const newSignBtn = document.createElement('button');
     newSignBtn.type = 'button';
@@ -527,7 +592,6 @@ const Wizard = (() => {
 
     actions.appendChild(newSignBtn);
     actions.appendChild(finishBtn);
-    wrap.appendChild(recap);
     wrap.appendChild(actions);
     screen.appendChild(wrap);
   }
