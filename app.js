@@ -493,9 +493,8 @@ const Wizard = (() => {
       'STATUT : ' + statutLabel,
       'NOM INTERVIEWÉ : ' + fullName(wizardState.prenom, wizardState.nom),
       'FORMAT : ' + wizardState.format,
-      'SUJET : ' + wizardState.sujet,
       'DATE : ' + wizardState.date,
-      'JOURNALISTE : ' + journaliste
+      'RESPONSABLE SIGNATURE : ' + journaliste
     ].forEach(line => {
       const p = document.createElement('p');
       p.className = 'text-primary';
