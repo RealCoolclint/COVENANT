@@ -674,27 +674,80 @@ const Wizard = (() => {
       return currentY;
     }
 
+    const pageWidth = 595;
+    const pageHeight = 842;
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    }
+
+    async function prepareLogoPngBytes(logoBase64) {
+      const img = await new Promise((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error('Logo introuvable'));
+        el.src = 'data:image/png;base64,' + logoBase64;
+      });
+      const targetWidth = 800;
+      const targetHeight = Math.round(img.naturalHeight * (targetWidth / img.naturalWidth));
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        if (r < 60 && g < 60 && b < 60) {
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
+          data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      const outBase64 = canvas.toDataURL('image/png').split(',')[1];
+      return Uint8Array.from(atob(outBase64), c => c.charCodeAt(0));
+    }
+
     let logoEmbedded = null;
     try {
-      const logoRes = await fetch('assets/logo_etudiant.png');
-      if (logoRes.ok) {
-        const logoBuffer = await logoRes.arrayBuffer();
-        logoEmbedded = await pdfDoc.embedPng(logoBuffer);
+      let logoBase64 = window._COVENANT_LOGO_PNG_BASE64;
+      if (!logoBase64) {
+        const script = document.querySelector('script[src*="app.js"]');
+        const logoUrl = script && script.src
+          ? new URL('assets/logo_etudiant.png', script.src).href
+          : new URL('assets/logo_etudiant.png', document.baseURI).href;
+        const logoRes = await fetch(logoUrl);
+        if (logoRes.ok) {
+          logoBase64 = bytesToBase64(new Uint8Array(await logoRes.arrayBuffer()));
+        }
+      }
+      if (logoBase64) {
+        logoEmbedded = await pdfDoc.embedPng(await prepareLogoPngBytes(logoBase64));
       }
     } catch (e) {
       logoEmbedded = null;
     }
 
-    let cursorY = 780;
+    let cursorY = pageHeight - 50;
 
     if (logoEmbedded) {
       const logoDims = logoEmbedded.scale(1);
-      const pageWidth = 595;
-      const logoWidth = 120;
+      const logoWidth = 200;
       const logoX = (pageWidth - logoWidth) / 2;
       const logoHeight = (logoWidth / logoDims.width) * logoDims.height;
-      page.drawImage(logoEmbedded, { x: logoX, y: 760, width: logoWidth, height: logoHeight });
-      cursorY = 740;
+      const logoY = pageHeight - 40 - logoHeight;
+      page.drawImage(logoEmbedded, { x: logoX, y: logoY, width: logoWidth, height: logoHeight });
+      cursorY = logoY - 28;
     }
 
     const titleText = 'AUTORISATION DE DROIT A L\'IMAGE ET A LA VOIX';
@@ -758,7 +811,30 @@ const Wizard = (() => {
     cursorY -= 10;
 
     if (_signaturePad && !_signaturePad.isEmpty()) {
-      const signatureDataUrl = _signaturePad.toDataURL('image/png');
+      const srcCanvas = _signaturePad.canvas;
+      const srcImageData = srcCanvas.getContext('2d').getImageData(0, 0, srcCanvas.width, srcCanvas.height);
+      const offscreen = document.createElement('canvas');
+      offscreen.width = srcCanvas.width;
+      offscreen.height = srcCanvas.height;
+      const ctx = offscreen.getContext('2d');
+      const imageData = ctx.createImageData(offscreen.width, offscreen.height);
+      const src = srcImageData.data;
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (src[i + 3] > 10) {
+          data[i] = 0;
+          data[i + 1] = 0;
+          data[i + 2] = 0;
+          data[i + 3] = 255;
+        } else {
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
+          data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      const signatureDataUrl = offscreen.toDataURL('image/png');
       const signatureBase64 = signatureDataUrl.split(',')[1];
       const signatureBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
       const signatureImage = await pdfDoc.embedPng(signatureBytes);
