@@ -639,7 +639,7 @@ select.text-input {
 .covenant-checklist-label {
   color: var(--text-secondary);
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 120px;
 }
 
 .covenant-checklist-value {
@@ -649,6 +649,8 @@ select.text-input {
 
 .covenant-confirm-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
   opacity: 0;
