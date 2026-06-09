@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || '{}');
-    const { pdfBase64, filename, interviewe, format, date, journaliste, statut } = body;
+    const { pdfBase64, filename, interviewe, format, date, journaliste, statut, contactInterviewe, contactIntervieweType } = body;
     const { responsableEmail } = body;
 
     if (!pdfBase64 || !filename) {
@@ -40,6 +40,7 @@ exports.handler = async (event) => {
       <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
         <tr><td><strong>Statut</strong></td><td>${statutLabel}</td></tr>
         <tr><td><strong>Interviewé</strong></td><td>${interviewe || ''}</td></tr>
+        ${contactInterviewe ? `<tr><td><strong>Contact interviewé</strong></td><td>${contactIntervieweType === 'tel' ? 'Tél : ' : 'Email : '}${contactInterviewe}</td></tr>` : ''}
         <tr><td><strong>Format</strong></td><td>${format || ''}</td></tr>
         <tr><td><strong>Date</strong></td><td>${date || ''}</td></tr>
         <tr><td><strong>Responsable signature</strong></td><td>${journaliste || ''}</td></tr>

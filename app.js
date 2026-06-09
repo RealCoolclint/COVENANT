@@ -879,7 +879,9 @@ const Wizard = (() => {
         date: Wizard.wizardState.date,
         journaliste,
         responsableEmail: responsableEmail,
-        statut: Wizard.wizardState.statut
+        statut: Wizard.wizardState.statut,
+        contactInterviewe: Wizard.wizardState.contact || '',
+        contactIntervieweType: Wizard.wizardState.contactType || 'email',
       };
       const response = await fetch('https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email', {
         method: 'POST',
