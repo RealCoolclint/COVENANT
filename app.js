@@ -1,3 +1,51 @@
+const OfflineQueue = (() => {
+  const LS_KEY = 'covenant_offline_queue';
+
+  function save(payload) {
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    showBanner();
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+  }
+
+  function clear() {
+    localStorage.removeItem(LS_KEY);
+    hideBanner();
+  }
+
+  function showBanner() {
+    const el = document.getElementById('offline-banner');
+    if (el) el.classList.add('visible');
+  }
+
+  function hideBanner() {
+    const el = document.getElementById('offline-banner');
+    if (el) el.classList.remove('visible');
+  }
+
+  async function retry() {
+    const payload = load();
+    if (!payload) return;
+    try {
+      const response = await fetch('https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        clear();
+      }
+    } catch(e) {}
+  }
+
+  return { save, load, clear, showBanner, hideBanner, retry };
+})();
+
 const Wizard = (() => {
   const LEGAL_TEXT_PLACEHOLDER = '[ TEXTE JURIDIQUE — À INTÉGRER ]';
 
@@ -864,6 +912,7 @@ const Wizard = (() => {
     window._covenantPdfFilename = filename;
 
     // Envoi email via proxy Netlify
+    let payload;
     try {
       const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
       const journaliste = (window.covenantSession && window.covenantSession.profileName)
@@ -871,7 +920,7 @@ const Wizard = (() => {
       const responsableEmail = (window.covenantSession && window.covenantSession.profileEmailPrefix)
         ? window.covenantSession.profileEmailPrefix + '@letudiant.fr'
         : null;
-      const payload = {
+      payload = {
         pdfBase64,
         filename,
         interviewe: (Wizard.wizardState.prenom + ' ' + Wizard.wizardState.nom).trim(),
@@ -890,8 +939,12 @@ const Wizard = (() => {
       });
       const result = await response.json();
       window._covenantEmailResult = response.ok ? 'success' : 'error';
+      if (!response.ok) {
+        OfflineQueue.save(payload);
+      }
     } catch (e) {
       window._covenantEmailResult = 'error';
+      OfflineQueue.save(payload);
     }
   }
 
@@ -1211,3 +1264,24 @@ window.onMercuryComplete = function() {
   document.getElementById('screen-profile').classList.add('active');
   WebProfileSelector.init();
 };
+
+// Listener online — retry automatique au retour réseau (délai 2s pour stabilité Safari iOS)
+window.addEventListener('online', () => {
+  setTimeout(() => {
+    OfflineQueue.retry();
+  }, 2000);
+});
+
+// Bouton retry manuel dans le bandeau
+document.addEventListener('DOMContentLoaded', () => {
+  const retryBtn = document.getElementById('offline-banner-retry');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      OfflineQueue.retry();
+    });
+  }
+  // Afficher le bandeau au chargement si une entrée est déjà en queue
+  if (OfflineQueue.load()) {
+    OfflineQueue.showBanner();
+  }
+});

@@ -660,3 +660,49 @@ select.text-input {
 @keyframes covenant-fade-in {
   to { opacity: 1; }
 }
+
+/* OFFLINE QUEUE — BANDEAU */
+#offline-banner {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: var(--warning);
+  color: #000;
+  font-family: 'Lato', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 6px 16px;
+  text-align: center;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+#offline-banner.visible {
+  display: flex;
+}
+
+#offline-banner-retry {
+  background: transparent;
+  border: 1px solid #000;
+  color: #000;
+  font-family: 'Lato', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+#offline-banner-retry:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
