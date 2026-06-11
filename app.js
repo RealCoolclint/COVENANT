@@ -39,6 +39,15 @@ const OfflineQueue = (() => {
       });
       if (response.ok) {
         clear();
+        window._covenantEmailResult = 'success';
+        const emailStatusEl = document.querySelector('.covenant-email-success, .covenant-email-error');
+        if (emailStatusEl) {
+          emailStatusEl.className = 'covenant-email-success';
+          emailStatusEl.textContent = 'EMAIL ENVOYÉ';
+        }
+        const emailChecklistValue = Array.from(document.querySelectorAll('.covenant-checklist-value'))
+          .find(el => el.previousElementSibling && el.previousElementSibling.textContent === 'EMAIL');
+        if (emailChecklistValue) emailChecklistValue.textContent = 'ENVOYÉ';
       }
     } catch(e) {}
   }
@@ -938,8 +947,11 @@ const Wizard = (() => {
         body: JSON.stringify(payload)
       });
       const result = await response.json();
-      window._covenantEmailResult = response.ok ? 'success' : 'error';
-      if (!response.ok) {
+      if (response.ok) {
+        window._covenantEmailResult = 'success';
+        OfflineQueue.clear();
+      } else {
+        window._covenantEmailResult = 'error';
         OfflineQueue.save(payload);
       }
     } catch (e) {
