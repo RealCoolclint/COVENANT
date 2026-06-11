@@ -1,0 +1,22 @@
+{
+  "name": "COVENANT",
+  "short_name": "COVENANT",
+  "description": "Autorisation de tournage — Cellule Vidéo L'Étudiant",
+  "start_url": "/COVENANT/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/patch_COVENANT.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/patch_COVENANT.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

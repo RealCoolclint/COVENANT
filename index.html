@@ -23,6 +23,11 @@
       document.head.appendChild(link);
     })();
   </script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="COVENANT">
+  <link rel="apple-touch-icon" href="assets/patch_COVENANT.png">
 </head>
 <body class="dark-theme">
   <div id="mercury-opening">
@@ -108,6 +113,14 @@
       if (typeof window.onMercuryComplete === 'function') window.onMercuryComplete();
     }, 4230);
   })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/COVENANT/sw.js', { scope: '/COVENANT/' })
+          .catch(err => console.warn('[SW] Enregistrement échoué :', err));
+      });
+    }
   </script>
 </body>
 </html>
