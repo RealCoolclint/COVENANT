@@ -98,6 +98,13 @@ const Wizard = (() => {
 
   let _signaturePad = null;
 
+  function resolveEmailFunctionUrl() {
+    if (typeof location !== 'undefined' && location.hostname.endsWith('netlify.app')) {
+      return '/.netlify/functions/send-email';
+    }
+    return 'https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email';
+  }
+
   const wizardState = {
     statut: null,
     prenom: '',
@@ -923,25 +930,25 @@ const Wizard = (() => {
     // Envoi email via proxy Netlify
     let payload;
     try {
-      const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
+      const pdfBase64 = bytesToBase64(pdfBytes);
       const journaliste = (window.covenantSession && window.covenantSession.profileName)
-        || Wizard.wizardState.journalistePrenom || '';
+        || wizardState.journalistePrenom || '';
       const responsableEmail = (window.covenantSession && window.covenantSession.profileEmailPrefix)
         ? window.covenantSession.profileEmailPrefix + '@letudiant.fr'
         : null;
       payload = {
         pdfBase64,
         filename,
-        interviewe: (Wizard.wizardState.prenom + ' ' + Wizard.wizardState.nom).trim(),
-        format: Wizard.wizardState.format,
-        date: Wizard.wizardState.date,
+        interviewe: (wizardState.prenom + ' ' + wizardState.nom).trim(),
+        format: wizardState.format,
+        date: wizardState.date,
         journaliste,
         responsableEmail: responsableEmail,
-        statut: Wizard.wizardState.statut,
-        contactInterviewe: Wizard.wizardState.contact || '',
-        contactIntervieweType: Wizard.wizardState.contactType || 'email',
+        statut: wizardState.statut,
+        contactInterviewe: wizardState.contact || '',
+        contactIntervieweType: wizardState.contactType || 'email',
       };
-      const response = await fetch('https://musical-tanuki-a691a5.netlify.app/.netlify/functions/send-email', {
+      const response = await fetch(resolveEmailFunctionUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
